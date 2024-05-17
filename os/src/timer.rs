@@ -1,3 +1,9 @@
+//!ASCII Rust SPA4 LF
+// Docutitle: Timer
+// Codifiers: @dosconio: 20240515
+// Attribute: RISC-V-64
+// Copyright: rCore-Tutorial-Code-2024S
+
 //! RISC-V timer-related functionality
 
 use crate::config::CLOCK_FREQ;

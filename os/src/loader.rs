@@ -1,3 +1,9 @@
+//!ASCII Rust SPA4 LF
+// Docutitle: ? of Mcca-rCore
+// Codifiers: @dosconio: 20240515
+// Attribute: RISC-V-64
+// Copyright: rCore-Tutorial-Code-2024S
+
 //! Loading user applications into memory
 //!
 //! For chapter 3, user applications are simply part of the data included in the
@@ -85,6 +91,7 @@ pub fn load_apps() {
             core::slice::from_raw_parts(app_start[i] as *const u8, app_start[i + 1] - app_start[i])
         };
         let dst = unsafe { core::slice::from_raw_parts_mut(base_i as *mut u8, src.len()) };
+        info!("Load App{} into {:x} from {:x} len {:x}",i , base_i, app_start[i], src.len());
         dst.copy_from_slice(src);
     }
 }
@@ -96,3 +103,5 @@ pub fn init_app_cx(app_id: usize) -> usize {
         USER_STACK[app_id].get_sp(),
     ))
 }
+
+

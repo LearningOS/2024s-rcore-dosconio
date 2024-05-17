@@ -1,3 +1,9 @@
+//!ASCII Rust SPA4 LF
+// Docutitle: ? of Mcca-rCore
+// Codifiers: @dosconio: 20240515
+// Attribute: RISC-V-64
+// Copyright: rCore-Tutorial-Code-2024S
+
 //! Task management implementation
 //!
 //! Everything about task management, like starting and switching tasks is
@@ -15,8 +21,10 @@ mod switch;
 mod task;
 
 use crate::config::MAX_APP_NUM;
+use crate::config::MAX_SYSCALL_NUM;
 use crate::loader::{get_num_app, init_app_cx};
 use crate::sync::UPSafeCell;
+use crate::timer::{/*get_time,*/ get_time_ms};
 use lazy_static::*;
 use switch::__switch;
 pub use task::{TaskControlBlock, TaskStatus};
@@ -54,6 +62,8 @@ lazy_static! {
         let mut tasks = [TaskControlBlock {
             task_cx: TaskContext::zero_init(),
             task_status: TaskStatus::UnInit,
+            start_time: -1,// uninitialized
+            syscall_times: [0; MAX_SYSCALL_NUM],
         }; MAX_APP_NUM];
         for (i, task) in tasks.iter_mut().enumerate() {
             task.task_cx = TaskContext::goto_restore(init_app_cx(i));
@@ -81,6 +91,10 @@ impl TaskManager {
         let task0 = &mut inner.tasks[0];
         task0.task_status = TaskStatus::Running;
         let next_task_cx_ptr = &task0.task_cx as *const TaskContext;
+        if task0.start_time == -1 {
+            task0.start_time = get_time_ms() as isize;
+            info!("[kernel] first task context from 0x{:x} at {}ms", &task0.task_cx as *const TaskContext as usize, task0.start_time);
+        }
         drop(inner);
         let mut _unused = TaskContext::zero_init();
         // before this, we should drop local variables that must be dropped manually
@@ -125,6 +139,11 @@ impl TaskManager {
             inner.current_task = next;
             let current_task_cx_ptr = &mut inner.tasks[current].task_cx as *mut TaskContext;
             let next_task_cx_ptr = &inner.tasks[next].task_cx as *const TaskContext;
+            if inner.tasks[next].start_time == -1 {
+                //(other: obj in Context, which is no-needy)let next_task_cx_mutptr = next_task_cx_ptr as *mut TaskContext;
+                inner.tasks[next].start_time = get_time_ms() as isize;
+                info!("[kernel] next task context from 0x{:x} at {}ms", &inner.tasks[next].task_cx as *const TaskContext as usize, inner.tasks[next].start_time);
+            }
             drop(inner);
             // before this, we should drop local variables that must be dropped manually
             unsafe {
@@ -134,6 +153,43 @@ impl TaskManager {
         } else {
             panic!("All applications completed!");
         }
+    }
+
+    /// Change start time
+    // fn change_start_time(&self, t: isize) {
+    //     let mut inner = self.inner.exclusive_access();
+    //     let current = inner.current_task;
+    //     inner.tasks[current].start_time = t;
+    //     drop(inner);
+    // }
+
+    /// Get start time
+    fn get_start_time(&self) -> isize {
+        let inner = self.inner.exclusive_access();
+        let res = inner.tasks[inner.current_task].start_time;
+        drop(inner);
+        res
+    }
+
+    /// Increase syscall times
+    fn increase_syscall_times(&self, callno: usize) {
+        if callno >= MAX_SYSCALL_NUM {
+            panic!("Invalid syscall number!");
+        }
+        let mut inner = self.inner.exclusive_access();
+        let crt = inner.current_task;
+        inner.tasks[crt].syscall_times[callno] += 1;
+        drop(inner);
+    }
+
+    /// Get syscall times
+    fn get_syscall_times(&self, systab: &mut [u32; MAX_SYSCALL_NUM]) {
+        let inner = self.inner.exclusive_access();
+        let crt = inner.current_task;
+        for i in 0..MAX_SYSCALL_NUM {
+            systab[i] = inner.tasks[crt].syscall_times[i];
+        }
+        drop(inner);
     }
 }
 
@@ -168,4 +224,24 @@ pub fn suspend_current_and_run_next() {
 pub fn exit_current_and_run_next() {
     mark_current_exited();
     run_next_task();
+}
+
+/// Change start time
+// pub fn change_start_time(t: isize) {
+//     TASK_MANAGER.change_start_time(t);
+// }
+
+/// Get start time (unit/ms)
+pub fn get_start_time() -> isize {
+    TASK_MANAGER.get_start_time()
+}
+
+/// Increase syscall times
+pub fn increase_syscall_times(callno: usize) {
+    TASK_MANAGER.increase_syscall_times(callno);
+}
+
+/// Get syscall times
+pub fn get_syscall_times(systab: &mut [u32; MAX_SYSCALL_NUM]) {
+    TASK_MANAGER.get_syscall_times(systab);
 }

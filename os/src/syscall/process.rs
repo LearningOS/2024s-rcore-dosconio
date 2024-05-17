@@ -1,8 +1,14 @@
-//! Process management syscalls
+//!ASCII Rust SPA4 LF
+// Docutitle: App management syscalls
+// Codifiers: @dosconio: 20240509
+// Attribute: RISC-V-64
+// Copyright: rCore-Tutorial-Code-2024S
+
 use crate::{
     config::MAX_SYSCALL_NUM,
-    task::{exit_current_and_run_next, suspend_current_and_run_next, TaskStatus},
-    timer::get_time_us,
+    task::{exit_current_and_run_next, get_start_time, suspend_current_and_run_next, get_syscall_times, TaskStatus},
+    timer::{/*get_time,*/ get_time_ms, get_time_us},
+    syscall::SYSCALL_TASK_INFO,
 };
 
 #[repr(C)]
@@ -50,8 +56,14 @@ pub fn sys_get_time(ts: *mut TimeVal, _tz: usize) -> isize {
     0
 }
 
-/// YOUR JOB: Finish sys_task_info to pass testcases
+/// @dosconio 20240516
 pub fn sys_task_info(_ti: *mut TaskInfo) -> isize {
-    trace!("kernel: sys_task_info");
-    -1
+    unsafe {
+        (*_ti).time = get_time_ms() - (get_start_time() as usize);// 返回系统调用时刻距离任务第一次被调度时刻的时长，也就是说这个时长可能包含该任务被其他任务抢占后的等待重新调度的时间, 単位:ms
+        get_syscall_times(&mut (*_ti).syscall_times);
+        (*_ti).status = TaskStatus::Running;// 由于查询的是当前任务的状态，因此 TaskStatus 一定是 Running
+        info!("SYS_TASK_INFO: getinfo_times={} span_time={}ms", (*_ti).syscall_times[SYSCALL_TASK_INFO], (*_ti).time);
+    }
+    0
 }
+

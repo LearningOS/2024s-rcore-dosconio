@@ -1,4 +1,8 @@
-//! File and filesystem-related syscalls
+//!ASCII Rust SPA4 LF
+// Docutitle: File and filesystem-related syscalls
+// Codifiers: @dosconio: 20240509
+// Attribute: RISC-V-64
+// Copyright: rCore-Tutorial-Code-2024S
 
 const FD_STDOUT: usize = 1;
 
@@ -17,3 +21,4 @@ pub fn sys_write(fd: usize, buf: *const u8, len: usize) -> isize {
         }
     }
 }
+

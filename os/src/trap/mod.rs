@@ -1,13 +1,12 @@
-//! Trap handling functionality
-//!
-//! For rCore, we have a single trap entry point, namely `__alltraps`. At
-//! initialization in [`init()`], we set the `stvec` CSR to point to it.
-//!
-//! All traps go through `__alltraps`, which is defined in `trap.S`. The
-//! assembly language code does just enough work restore the kernel space
-//! context, ensuring that Rust code safely runs, and transfers control to
-//! [`trap_handler()`].
-//!
+//!ASCII Rust SPA4 LF
+// Docutitle: Trap handling of Mcca-rCore
+// Codifiers: @dosconio: 20240509
+// Attribute: RISC-V-64
+// Copyright: rCore-Tutorial-Code-2024S
+
+// for rCore, the entry is `__alltraps`, which transfers control to `trap_handler()`. At initialization `init()`, set the `stvec` CSR to point to it. 
+
+
 //! It then calls different functionality based on what exactly the exception
 //! was. For example, timer interrupts trigger task preemption, and syscalls go
 //! to [`syscall()`].
@@ -25,7 +24,6 @@ use riscv::register::{
 };
 
 global_asm!(include_str!("trap.S"));
-
 /// Initialize trap handling
 pub fn init() {
     extern "C" {
@@ -80,3 +78,4 @@ pub fn trap_handler(cx: &mut TrapContext) -> &mut TrapContext {
 }
 
 pub use context::TrapContext;
+
