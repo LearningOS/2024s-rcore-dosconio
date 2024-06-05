@@ -1,3 +1,9 @@
+//!ASCII Rust SPA4 LF
+// Docutitle: ? of Mcca-rCore
+// Codifiers: @dosconio: 20240515
+// Attribute: RISC-V-64
+// Copyright: rCore-Tutorial-Code-2024S
+
 //! Rust wrapper around `__switch`.
 //!
 //! Switching to a different task's context happens here. The actual
@@ -5,8 +11,10 @@
 //! language (Do you know why?), so this module really is just a wrapper around
 //! `switch.S`.
 
-core::arch::global_asm!(include_str!("switch.S"));
 use super::TaskContext;
+use core::arch::global_asm;
+
+global_asm!(include_str!("switch.S"));
 
 extern "C" {
     /// Switch to the context of `next_task_cx_ptr`, saving the current context

@@ -1,4 +1,15 @@
+//!ASCII Rust SPA4 LF
+// Docutitle: ? of Mcca-rCore
+// Codifiers: @dosconio: 20240515
+// Attribute: RISC-V-64
+// Copyright: rCore-Tutorial-Code-2024S
+
 //! Loading user applications into memory
+//!
+//! For chapter 3, user applications are simply part of the data included in the
+//! kernel binary, so we only need to copy them to the space allocated for each
+//! app to load them. We also allocate fixed spaces for each task's
+//! [`KernelStack`] and [`UserStack`].
 
 /// Get the total number of applications.
 pub fn get_num_app() -> usize {
@@ -7,6 +18,7 @@ pub fn get_num_app() -> usize {
     }
     unsafe { (_num_app as usize as *const usize).read_volatile() }
 }
+
 
 /// get applications data
 pub fn get_app_data(app_id: usize) -> &'static [u8] {

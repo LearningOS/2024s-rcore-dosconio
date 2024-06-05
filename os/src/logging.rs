@@ -33,9 +33,10 @@ impl Log for SimpleLogger {
 /// initiate logger
 pub fn init() {
     static LOGGER: SimpleLogger = SimpleLogger;
+    // These are Rust Builtin Mechanism
     log::set_logger(&LOGGER).unwrap();
     log::set_max_level(match option_env!("LOG") {
-        Some("ERROR") => LevelFilter::Error,
+        Some("ERRO") => LevelFilter::Error,
         Some("WARN") => LevelFilter::Warn,
         Some("INFO") => LevelFilter::Info,
         Some("DEBUG") => LevelFilter::Debug,

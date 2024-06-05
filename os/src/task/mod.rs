@@ -1,3 +1,9 @@
+//!ASCII Rust SPA4 LF
+// Docutitle: ? of Mcca-rCore
+// Codifiers: @dosconio: 20240515
+// Attribute: RISC-V-64
+// Copyright: rCore-Tutorial-Code-2024S
+
 //! Task management implementation
 //!
 //! Everything about task management, like starting and switching tasks is
@@ -9,20 +15,29 @@
 //! Be careful when you see `__switch` ASM function in `switch.S`. Control flow around this function
 //! might not be what you expect.
 
+#![allow(warnings)]//{TEMP}
+
 mod context;
 mod switch;
 #[allow(clippy::module_inception)]
 mod task;
 
+use core::panic;
+
+use crate::config::MAX_SYSCALL_NUM;
 use crate::loader::{get_app_data, get_num_app};
 use crate::sync::UPSafeCell;
 use crate::trap::TrapContext;
+use crate::timer::{/*get_time,*/ get_time_ms};
 use alloc::vec::Vec;
 use lazy_static::*;
 use switch::__switch;
 pub use task::{TaskControlBlock, TaskStatus};
 
 pub use context::TaskContext;
+use crate::memory::{
+    MapPermission, VirtAddr
+};
 
 /// The task manager, where all the tasks are managed.
 ///
@@ -40,10 +55,10 @@ pub struct TaskManager {
     inner: UPSafeCell<TaskManagerInner>,
 }
 
-/// The task manager inner in 'UPSafeCell'
-struct TaskManagerInner {
+/// Inner of Task Manager
+pub struct TaskManagerInner {
     /// task list
-    tasks: Vec<TaskControlBlock>,
+    tasks: Vec<TaskControlBlock>, //[TaskControlBlock; MAX_APP_NUM],
     /// id of current `Running` task
     current_task: usize,
 }
@@ -53,10 +68,11 @@ lazy_static! {
     pub static ref TASK_MANAGER: TaskManager = {
         println!("init TASK_MANAGER");
         let num_app = get_num_app();
-        println!("num_app = {}", num_app);
+        println!("[rkernel] found {} apps", num_app);
         let mut tasks: Vec<TaskControlBlock> = Vec::new();
         for i in 0..num_app {
             tasks.push(TaskControlBlock::new(get_app_data(i), i));
+            trace!("app {} pushed", i);
         }
         TaskManager {
             num_app,
@@ -74,12 +90,16 @@ impl TaskManager {
     /// Run the first task in task list.
     ///
     /// Generally, the first task in task list is an idle task (we call it zero process later).
-    /// But in ch4, we load apps statically, so the first task is a real app.
+    /// But in ch3, we load apps statically, so the first task is a real app.
     fn run_first_task(&self) -> ! {
         let mut inner = self.inner.exclusive_access();
         let next_task = &mut inner.tasks[0];
         next_task.task_status = TaskStatus::Running;
         let next_task_cx_ptr = &next_task.task_cx as *const TaskContext;
+        if next_task.start_time == -1 {
+            next_task.start_time = get_time_ms() as isize;
+            info!("[rkernel] first task context from 0x{:x} at {}ms", &next_task.task_cx as *const TaskContext as usize, next_task.start_time);
+        }
         drop(inner);
         let mut _unused = TaskContext::zero_init();
         // before this, we should drop local variables that must be dropped manually
@@ -92,15 +112,15 @@ impl TaskManager {
     /// Change the status of current `Running` task into `Ready`.
     fn mark_current_suspended(&self) {
         let mut inner = self.inner.exclusive_access();
-        let cur = inner.current_task;
-        inner.tasks[cur].task_status = TaskStatus::Ready;
+        let current = inner.current_task;
+        inner.tasks[current].task_status = TaskStatus::Ready;
     }
 
     /// Change the status of current `Running` task into `Exited`.
     fn mark_current_exited(&self) {
         let mut inner = self.inner.exclusive_access();
-        let cur = inner.current_task;
-        inner.tasks[cur].task_status = TaskStatus::Exited;
+        let current = inner.current_task;
+        inner.tasks[current].task_status = TaskStatus::Exited;
     }
 
     /// Find next task to run and return task id.
@@ -143,6 +163,10 @@ impl TaskManager {
             inner.current_task = next;
             let current_task_cx_ptr = &mut inner.tasks[current].task_cx as *mut TaskContext;
             let next_task_cx_ptr = &inner.tasks[next].task_cx as *const TaskContext;
+            if inner.tasks[next].start_time == -1 {
+                inner.tasks[next].start_time = get_time_ms() as isize;
+                info!("[rkernel] next task context from 0x{:x} at {}ms", &inner.tasks[next].task_cx as *const TaskContext as usize, inner.tasks[next].start_time);
+            }
             drop(inner);
             // before this, we should drop local variables that must be dropped manually
             unsafe {
@@ -153,7 +177,80 @@ impl TaskManager {
             panic!("All applications completed!");
         }
     }
-}
+
+    /// Change start time
+    // fn change_start_time(&self, t: isize) {
+    //     let mut inner = self.inner.exclusive_access();
+    //     let current = inner.current_task;
+    //     inner.tasks[current].start_time = t;
+    //     drop(inner);
+    // }
+
+    /// Get start time
+    fn get_start_time(&self) -> isize {
+        let inner = self.inner.exclusive_access();
+        let res = inner.tasks[inner.current_task].start_time;
+        drop(inner);
+        res
+    }
+
+    /// Increase syscall times
+    fn increase_syscall_times(&self, callno: usize) {
+        if callno >= MAX_SYSCALL_NUM {
+            panic!("Invalid syscall number!");
+        }
+        let mut inner = self.inner.exclusive_access();
+        let crt = inner.current_task;
+        inner.tasks[crt].syscall_times[callno] += 1;
+        drop(inner);
+    }
+
+    /// Get syscall times
+    fn get_syscall_times(&self, systab: &mut [u32; MAX_SYSCALL_NUM]) {
+        let inner = self.inner.exclusive_access();
+        let crt = inner.current_task;
+        for i in 0..MAX_SYSCALL_NUM {
+            systab[i] = inner.tasks[crt].syscall_times[i];
+        }
+        drop(inner);
+    }
+
+    /// mmap
+    fn pro_mmap(&self, start: usize, len: usize, port: &MapPermission) -> bool {
+        let mut inner = self.inner.exclusive_access();
+        let crt = inner.current_task;
+        let crt_memset = &mut inner.tasks[crt].memory_set;
+        info!("mmap {:#x} to {:#x}", start >> 12, (start + len) >> 12);
+        if crt_memset.if_overlap(VirtAddr::from(start), VirtAddr::from(start + len)) {
+            drop(inner);
+            return false;
+        }
+        
+        crt_memset.insert_framed_area(
+            VirtAddr::from(start),
+            VirtAddr::from(start + len),
+            *port);
+        drop(inner);
+        true
+    }
+
+    /// munmap
+    fn pro_munmap(&self, start: usize, len: usize) -> bool {
+        let mut inner = self.inner.exclusive_access();
+        let crt = inner.current_task;
+        let crt_memset = &mut inner.tasks[crt].memory_set;
+        if !crt_memset.if_matched(start, start + len) {
+            drop(inner);
+            return false;
+        }
+        crt_memset.remove_area(VirtAddr::from(VirtAddr::from(start).floor()) ,
+            VirtAddr::from(VirtAddr::from(start + len).ceil()));
+        drop(inner);
+        true
+    }
+} 
+
+// BELOW ARE INTERFACES
 
 /// Run the first task in task list.
 pub fn run_first_task() {
@@ -188,6 +285,26 @@ pub fn exit_current_and_run_next() {
     run_next_task();
 }
 
+/// Change start time
+// pub fn change_start_time(t: isize) {
+//     TASK_MANAGER.change_start_time(t);
+// }
+
+/// Get start time (unit/ms)
+pub fn get_start_time() -> isize {
+    TASK_MANAGER.get_start_time()
+}
+
+/// Increase syscall times
+pub fn increase_syscall_times(callno: usize) {
+    TASK_MANAGER.increase_syscall_times(callno);
+}
+
+/// Get syscall times
+pub fn get_syscall_times(systab: &mut [u32; MAX_SYSCALL_NUM]) {
+    TASK_MANAGER.get_syscall_times(systab);
+}
+
 /// Get the current 'Running' task's token.
 pub fn current_user_token() -> usize {
     TASK_MANAGER.get_current_token()
@@ -201,4 +318,18 @@ pub fn current_trap_cx() -> &'static mut TrapContext {
 /// Change the current 'Running' task's program break
 pub fn change_program_brk(size: i32) -> Option<usize> {
     TASK_MANAGER.change_current_program_brk(size)
+}
+
+
+/// ...
+pub fn do_task_mmap(start: usize, len: usize, port: usize) -> bool {
+    trace!("Paging Map: {:#x}(inc) ~ {:#x}(exc)", start, start + len);
+    let mut permission = MapPermission::from_bits((port as u8) << 1).unwrap();
+    permission.set(MapPermission::U, true);
+    TASK_MANAGER.pro_mmap(start, len, &permission)
+} 
+
+/// ...
+pub fn do_task_munmap(start: usize, len: usize) -> bool {
+    TASK_MANAGER.pro_munmap(start, len)
 }

@@ -1,13 +1,12 @@
-//! Trap handling functionality
-//!
-//! For rCore, we have a single trap entry point, namely `__alltraps`. At
-//! initialization in [`init()`], we set the `stvec` CSR to point to it.
-//!
-//! All traps go through `__alltraps`, which is defined in `trap.S`. The
-//! assembly language code does just enough work restore the kernel space
-//! context, ensuring that Rust code safely runs, and transfers control to
-//! [`trap_handler()`].
-//!
+//!ASCII Rust SPA4 LF
+// Docutitle: Trap handling of Mcca-rCore
+// Codifiers: @dosconio: 20240509
+// Attribute: RISC-V-64
+// Copyright: rCore-Tutorial-Code-2024S
+
+// for rCore, the entry is `__alltraps`, which transfers control to `trap_handler()`. At initialization `init()`, set the `stvec` CSR to point to it. 
+
+
 //! It then calls different functionality based on what exactly the exception
 //! was. For example, timer interrupts trigger task preemption, and syscalls go
 //! to [`syscall()`].
@@ -17,7 +16,10 @@ mod context;
 use crate::config::{TRAMPOLINE, TRAP_CONTEXT_BASE};
 use crate::syscall::syscall;
 use crate::task::{
-    current_trap_cx, current_user_token, exit_current_and_run_next, suspend_current_and_run_next,
+    current_trap_cx, 
+    current_user_token, 
+    exit_current_and_run_next, 
+    suspend_current_and_run_next
 };
 use crate::timer::set_next_trigger;
 use core::arch::{asm, global_asm};
@@ -33,6 +35,8 @@ global_asm!(include_str!("trap.S"));
 pub fn init() {
     set_kernel_trap_entry();
 }
+
+// split __alltraps into below two
 
 fn set_kernel_trap_entry() {
     unsafe {
@@ -72,11 +76,11 @@ pub fn trap_handler() -> ! {
         | Trap::Exception(Exception::StorePageFault)
         | Trap::Exception(Exception::LoadFault)
         | Trap::Exception(Exception::LoadPageFault) => {
-            println!("[kernel] PageFault in application, bad addr = {:#x}, bad instruction = {:#x}, kernel killed it.", stval, cx.sepc);
+            println!("[rkernel] PageFault in application, bad addr = {:#x}, bad instruction = {:#x}, kernel killed it.", stval, cx.sepc);
             exit_current_and_run_next();
         }
         Trap::Exception(Exception::IllegalInstruction) => {
-            println!("[kernel] IllegalInstruction in application, kernel killed it.");
+            println!("[rkernel] IllegalInstruction in application, kernel killed it.");
             exit_current_and_run_next();
         }
         Trap::Interrupt(Interrupt::SupervisorTimer) => {
@@ -109,7 +113,7 @@ pub fn trap_return() -> ! {
         fn __restore();
     }
     let restore_va = __restore as usize - __alltraps as usize + TRAMPOLINE;
-    // trace!("[kernel] trap_return: ..before return");
+    // trace!("[rkernel] trap_return: ..before return");
     unsafe {
         asm!(
             "fence.i",
@@ -133,3 +137,4 @@ pub fn trap_from_kernel() -> ! {
 }
 
 pub use context::TrapContext;
+

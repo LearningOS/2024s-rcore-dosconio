@@ -1,3 +1,9 @@
+//!ASCII Rust SPA4 LF
+// Docutitle: 
+// Codifiers: @dosconio: 20240518
+// Attribute: RISC-V-64
+// Copyright: rCore-Tutorial-Code-2024S
+
 //! Implementation of [`PageTableEntry`] and [`PageTable`].
 
 use super::{frame_alloc, FrameTracker, PhysPageNum, StepByOne, VirtAddr, VirtPageNum};
