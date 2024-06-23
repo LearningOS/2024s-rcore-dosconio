@@ -1,3 +1,9 @@
+//!ASCII Rust SPA4 LF
+// Docutitle: 
+// Codifiers: @dosconio: 20240518
+// Attribute: RISC-V-64
+// Copyright: rCore-Tutorial-Code-2024S
+
 //! Implementation of physical and virtual address and page number.
 use super::PageTableEntry;
 use crate::config::{PAGE_SIZE, PAGE_SIZE_BITS};

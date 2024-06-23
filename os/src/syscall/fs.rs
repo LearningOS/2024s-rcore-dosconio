@@ -1,4 +1,9 @@
-//! File and filesystem-related syscalls
+//!ASCII Rust SPA4 LF
+// Docutitle: File and filesystem-related syscalls
+// Codifiers: @dosconio: 20240509
+// Attribute: RISC-V-64
+// Copyright: rCore-Tutorial-Code-2024S
+
 use crate::mm::translated_byte_buffer;
 use crate::sbi::console_getchar;
 use crate::task::{current_task, current_user_token, suspend_current_and_run_next};

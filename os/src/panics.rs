@@ -1,20 +1,22 @@
-//! The panic handler
+//!ASCII Rust SPA4 LF
+// Docutitle: Panic-Mechanism of Mcca-rCore
+// Codifiers: @dosconio: 20240423
+// Attribute: RISC-V-64
 
-use crate::sbi::shutdown;
 use core::panic::PanicInfo;
+use crate::sbi::shutdown;
 
 #[panic_handler]
-/// panic handler
 fn panic(info: &PanicInfo) -> ! {
     if let Some(location) = info.location() {
         println!(
-            "[kernel] Panicked at {}:{} {}",
+            "[rkernel] Panicked at {}:{} {}",
             location.file(),
             location.line(),
             info.message().unwrap()
         );
     } else {
-        println!("[kernel] Panicked: {}", info.message().unwrap());
+        println!("[rkernel] Panicked: {}", info.message().unwrap());
     }
     shutdown()
 }

@@ -1,3 +1,9 @@
+//!ASCII Rust SPA4 LF
+// Docutitle: 
+// Codifiers: @dosconio: 20240621
+// Attribute: RISC-V-64
+// Copyright: rCore-Tutorial-Code-2024S
+
 //!Implementation of [`Processor`] and Intersection of control flow
 //!
 //! Here, the continuous operation of user apps in CPU is maintained,
@@ -47,6 +53,7 @@ impl Processor {
 }
 
 lazy_static! {
+    /// .
     pub static ref PROCESSOR: UPSafeCell<Processor> = unsafe { UPSafeCell::new(Processor::new()) };
 }
 
@@ -104,6 +111,9 @@ pub fn current_trap_cx() -> &'static mut TrapContext {
 pub fn schedule(switched_task_cx_ptr: *mut TaskContext) {
     let mut processor = PROCESSOR.exclusive_access();
     let idle_task_cx_ptr = processor.get_idle_task_cx_ptr();
+
+    // let tasks = TASK_MANAGER.exclusive_access();
+
     drop(processor);
     unsafe {
         __switch(switched_task_cx_ptr, idle_task_cx_ptr);
