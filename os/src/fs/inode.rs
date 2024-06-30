@@ -1,3 +1,8 @@
+//!ASCII Rust TAB4 LF
+//!Docutitle: Mcca-rCore FS
+// Codifiers: @dosconio: 20240629 from rCore-Tutorial
+// Attribute: RISC-V-64
+
 //! `Arc<Inode>` -> `OSInodeInner`: In order to open files concurrently
 //! we need to wrap `Inode` into `Arc`,but `Mutex` in `Inode` prevents
 //! file systems from being accessed simultaneously
@@ -13,6 +18,8 @@ use alloc::vec::Vec;
 use bitflags::*;
 use easy_fs::{EasyFileSystem, Inode};
 use lazy_static::*;
+use crate::fs::{Stat, StatMode};
+use easy_fs::layout::DiskInodeType;
 
 /// inode in memory
 /// A wrapper around a filesystem inode
@@ -55,6 +62,7 @@ impl OSInode {
 }
 
 lazy_static! {
+    ///
     pub static ref ROOT_INODE: Arc<Inode> = {
         let efs = EasyFileSystem::open(BLOCK_DEVICE.clone());
         Arc::new(EasyFileSystem::root_inode(&efs))
@@ -123,6 +131,14 @@ pub fn open_file(name: &str, flags: OpenFlags) -> Option<Arc<OSInode>> {
         })
     }
 }
+/// Link a file
+pub fn link_file(_old_name: &str, _new_name: &str) -> Option<()> {
+    ROOT_INODE.link(_old_name, _new_name)
+}
+/// Unlink a file
+pub fn unlink_file(name: &str) -> Option<()> {
+    ROOT_INODE.unlink(name)
+}
 
 impl File for OSInode {
     fn readable(&self) -> bool {
@@ -154,5 +170,16 @@ impl File for OSInode {
             total_write_size += write_size;
         }
         total_write_size
+    }
+    fn stat(&self, st: &mut Stat) -> isize {
+        let inner = self.inner.exclusive_access();
+        inner.inode.read_disk_inode(|disk_inode| {
+            st.mode = match disk_inode.type_ {
+                DiskInodeType::File => StatMode::FILE,
+                DiskInodeType::Directory => StatMode::DIR,
+            };
+            st.nlink = disk_inode.nlink;
+        });
+        0
     }
 }

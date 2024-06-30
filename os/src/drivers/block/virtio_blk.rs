@@ -1,3 +1,8 @@
+//!ASCII Rust TAB4 LF
+//!Docutitle: Mcca-rCore virtio_blk device driver
+// Codifiers: @dosconio: 20240629 from rCore-Tutorial
+// Attribute: RISC-V-64
+
 use super::BlockDevice;
 use crate::mm::{
     frame_alloc, frame_dealloc, kernel_token, FrameTracker, PageTable, PhysAddr, PhysPageNum,
@@ -83,3 +88,4 @@ impl Hal for VirtioHal {
             .0
     }
 }
+

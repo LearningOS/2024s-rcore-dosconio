@@ -1,3 +1,9 @@
+//!ASCII Rust SPA4 LF
+// Docutitle: Task ??? of Mcca-rCore
+// Codifiers: @dosconio: 20240621
+// Attribute: RISC-V-64
+// Copyright: rCore-Tutorial-Code-2024S
+
 //! Task pid implementation.
 //!
 //! Assign PID to the process here. At the same time, the position of the application KernelStack

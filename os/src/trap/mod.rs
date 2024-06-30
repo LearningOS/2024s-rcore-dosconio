@@ -1,13 +1,12 @@
-//! Trap handling functionality
-//!
-//! For rCore, we have a single trap entry point, namely `__alltraps`. At
-//! initialization in [`init()`], we set the `stvec` CSR to point to it.
-//!
-//! All traps go through `__alltraps`, which is defined in `trap.S`. The
-//! assembly language code does just enough work restore the kernel space
-//! context, ensuring that Rust code safely runs, and transfers control to
-//! [`trap_handler()`].
-//!
+//!ASCII Rust SPA4 LF
+// Docutitle: Trap handling of Mcca-rCore
+// Codifiers: @dosconio: 20240509
+// Attribute: RISC-V-64
+// Copyright: rCore-Tutorial-Code-2024S
+
+// for rCore, the entry is `__alltraps`, which transfers control to `trap_handler()`. At initialization `init()`, set the `stvec` CSR to point to it. 
+
+
 //! It then calls different functionality based on what exactly the exception
 //! was. For example, timer interrupts trigger task preemption, and syscalls go
 //! to [`syscall()`].
@@ -17,7 +16,10 @@ mod context;
 use crate::config::{TRAMPOLINE, TRAP_CONTEXT_BASE};
 use crate::syscall::syscall;
 use crate::task::{
-    current_trap_cx, current_user_token, exit_current_and_run_next, suspend_current_and_run_next,
+    current_trap_cx, 
+    current_user_token, 
+    exit_current_and_run_next, 
+    suspend_current_and_run_next
 };
 use crate::timer::set_next_trigger;
 use core::arch::{asm, global_asm};
@@ -33,6 +35,8 @@ global_asm!(include_str!("trap.S"));
 pub fn init() {
     set_kernel_trap_entry();
 }
+
+// split __alltraps into below two
 
 fn set_kernel_trap_entry() {
     unsafe {
@@ -121,14 +125,14 @@ pub fn trap_return() -> ! {
         fn __restore();
     }
     let restore_va = __restore as usize - __alltraps as usize + TRAMPOLINE;
-    // trace!("[kernel] trap_return: ..before return");
+    // trace!("[rkernel] trap_return: ..before return");
     unsafe {
         asm!(
             "fence.i",
-            "jr {restore_va}",
+            "jr {restore_va}",         // jump to new addr of __restore asm function
             restore_va = in(reg) restore_va,
-            in("a0") trap_cx_ptr,
-            in("a1") user_satp,
+            in("a0") trap_cx_ptr,      // a0 = virt addr of Trap Context
+            in("a1") user_satp,        // a1 = phy addr of usr page table
             options(noreturn)
         );
     }
@@ -145,3 +149,4 @@ pub fn trap_from_kernel() -> ! {
 }
 
 pub use context::TrapContext;
+

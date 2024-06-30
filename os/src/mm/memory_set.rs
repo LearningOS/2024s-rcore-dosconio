@@ -1,4 +1,11 @@
+//!ASCII Rust SPA4 LF
+// Docutitle: 
+// Codifiers: @dosconio: 20240518
+// Attribute: RISC-V-64
+// Copyright: rCore-Tutorial-Code-2024S
+
 //! Implementation of [`MapArea`] and [`MemorySet`].
+
 use super::{frame_alloc, FrameTracker};
 use super::{PTEFlags, PageTable, PageTableEntry};
 use super::{PhysAddr, PhysPageNum, VirtAddr, VirtPageNum};
@@ -80,7 +87,7 @@ impl MemorySet {
     }
     /// Add a new MapArea into this MemorySet.
     /// Assuming that there are no conflicts in the virtual address
-    /// space.
+    /// space.    
     fn push(&mut self, mut map_area: MapArea, data: Option<&[u8]>) {
         map_area.map(&mut self.page_table);
         if let Some(data) = data {
@@ -318,6 +325,66 @@ impl MemorySet {
             false
         }
     }
+
+    /// if the range is reflected
+    pub fn if_overlap(&self, start_va: VirtAddr, end_va: VirtAddr) -> bool {
+        let start_va: VirtPageNum = start_va.floor();
+        let end_va: VirtPageNum = end_va.ceil();
+        for i in self.areas.iter() {
+            if i.vpn_range.get_start().0 >= end_va.0 || i.vpn_range.get_end().0 <= start_va.0 {
+            } else {
+                // info!("mem-overlap");
+                return true;
+            }
+        }
+        false
+    }
+/*
+    /// all overlap
+    pub fn if_contain(&self, start_va: VirtAddr, end_va: VirtAddr) -> bool {
+        let start_va: VirtPageNum = start_va.floor();
+        let end_va: VirtPageNum = end_va.ceil();
+        for i in self.areas.iter() {
+            if i.vpn_range.get_start().0 <= start_va.0 && i.vpn_range.get_end().0 >= end_va.0 {
+                return true;
+            }
+        }
+        false
+    }
+ */
+    /// all overlap
+    pub fn if_matched(&self, start: usize, end: usize) -> bool {
+        for i in self.areas.iter() {
+            if i.vpn_range.get_start().0<<12 == start && i.vpn_range.get_end().0<<12 == end {
+                return true;
+            }
+        }
+        false
+    }    
+
+    ///
+    pub fn remove_area(&mut self, start_va: VirtAddr, end_va: VirtAddr) {
+        // preset end_va >= start_va
+        let start_va: VirtPageNum = start_va.floor();
+        let end_va: VirtPageNum = end_va.ceil();
+        info!("umap since {} in total, from {:#x} to {:#x}", self.areas.len(), start_va.0, end_va.0);
+        let mut i = 0;
+        loop { 
+            if i >= self.areas.len() {
+                break;
+            }
+            let vpn_range = self.areas[i].vpn_range;
+            if vpn_range.get_start().0 == start_va.0 && vpn_range.get_end().0 == end_va.0 {
+                info!("     found {}", i);
+                self.areas[i].unmap(&mut self.page_table);
+                // self.areas.drain(i..i+1);
+                self.areas.remove(i);
+                break;
+            } else {
+                i += 1;
+            }
+        }
+    }
 }
 /// map area structure, controls a contiguous piece of virtual memory
 pub struct MapArea {
@@ -343,6 +410,7 @@ impl MapArea {
             map_perm,
         }
     }
+
     pub fn from_another(another: &Self) -> Self {
         Self {
             vpn_range: VPNRange::new(another.vpn_range.get_start(), another.vpn_range.get_end()),
@@ -351,6 +419,7 @@ impl MapArea {
             map_perm: another.map_perm,
         }
     }
+
     pub fn map_one(&mut self, page_table: &mut PageTable, vpn: VirtPageNum) {
         let ppn: PhysPageNum;
         match self.map_type {
@@ -366,6 +435,7 @@ impl MapArea {
         let pte_flags = PTEFlags::from_bits(self.map_perm.bits).unwrap();
         page_table.map(vpn, ppn, pte_flags);
     }
+    //#[allow(unused)]
     pub fn unmap_one(&mut self, page_table: &mut PageTable, vpn: VirtPageNum) {
         if self.map_type == MapType::Framed {
             self.data_frames.remove(&vpn);
@@ -377,6 +447,7 @@ impl MapArea {
             self.map_one(page_table, vpn);
         }
     }
+    //#[allow(unused)]
     pub fn unmap(&mut self, page_table: &mut PageTable) {
         for vpn in self.vpn_range {
             self.unmap_one(page_table, vpn);

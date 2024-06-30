@@ -1,5 +1,10 @@
-//! Implementation of syscalls
-//!
+//!ASCII Rust SPA4 LF
+// Docutitle: Sys-Call of Mcca-rCore
+// Codifiers: @dosconio: 20240509
+// Attribute: RISC-V-64
+// Copyright: rCore-Tutorial-Code-2024S
+
+
 //! The single entry point to all system calls, [`syscall()`], is called
 //! whenever userspace wishes to perform a system call using the `ecall`
 //! instruction. In this case, the processor raises an 'Environment call from
@@ -10,46 +15,68 @@
 //! `sys_` then the name of the syscall. You can find functions like this in
 //! submodules, and you should also implement syscalls this way.
 
+//pub const SYSCALL_DUP: usize = 24;
 /// unlinkat syscall
-const SYSCALL_UNLINKAT: usize = 35;
+pub const SYSCALL_UNLINKAT: usize = 35;
 /// linkat syscall
-const SYSCALL_LINKAT: usize = 37;
+pub const SYSCALL_LINKAT: usize = 37;
 /// open syscall
-const SYSCALL_OPEN: usize = 56;
+pub const SYSCALL_OPENAT: usize = 56;
 /// close syscall
-const SYSCALL_CLOSE: usize = 57;
-/// read syscall
-const SYSCALL_READ: usize = 63;
-/// write syscall
-const SYSCALL_WRITE: usize = 64;
+pub const SYSCALL_CLOSE: usize = 57;
+//pub const SYSCALL_PIPE: usize = 59;
+/// fget
+pub const SYSCALL_READ: usize = 63;
+/// fprintf
+pub const SYSCALL_WRITE: usize = 64;
 /// fstat syscall
-const SYSCALL_FSTAT: usize = 80;
-/// exit syscall
-const SYSCALL_EXIT: usize = 93;
+pub const SYSCALL_FSTAT: usize = 80;
+/// quit and execute next subapp
+pub const SYSCALL_EXIT: usize = 93;
+//pub const SYSCALL_SLEEP: usize = 101;
 /// yield syscall
-const SYSCALL_YIELD: usize = 124;
+pub const SYSCALL_YIELD: usize = 124;
+//pub const SYSCALL_KILL: usize = 129;
+//pub const SYSCALL_SIGACTION: usize = 134;
+//pub const SYSCALL_SIGPROCMASK: usize = 135;
+//pub const SYSCALL_SIGRETURN: usize = 139;
 /// setpriority syscall
-const SYSCALL_SET_PRIORITY: usize = 140;
+pub const SYSCALL_SET_PRIORITY: usize = 140;
 /// gettime syscall
-const SYSCALL_GET_TIME: usize = 169;
+pub const SYSCALL_GET_TIME: usize = 169;
 /// getpid syscall
-const SYSCALL_GETPID: usize = 172;
+pub const SYSCALL_GETPID: usize = 172;
+//pub const SYSCALL_GETTID: usize = 178;
 /// sbrk syscall
-const SYSCALL_SBRK: usize = 214;
+pub const SYSCALL_SBRK: usize = 214;
 /// munmap syscall
-const SYSCALL_MUNMAP: usize = 215;
+pub const SYSCALL_MUNMAP: usize = 215;
 /// fork syscall
-const SYSCALL_FORK: usize = 220;
+pub const SYSCALL_FORK: usize = 220;
 /// exec syscall
-const SYSCALL_EXEC: usize = 221;
+pub const SYSCALL_EXEC: usize = 221;
 /// mmap syscall
-const SYSCALL_MMAP: usize = 222;
+pub const SYSCALL_MMAP: usize = 222;
 /// waitpid syscall
-const SYSCALL_WAITPID: usize = 260;
+pub const SYSCALL_WAITPID: usize = 260;
 /// spawn syscall
-const SYSCALL_SPAWN: usize = 400;
+pub const SYSCALL_SPAWN: usize = 400;
+//pub const SYSCALL_MAIL_READ: usize = 401;
+//pub const SYSCALL_MAIL_WRITE: usize = 402;
 /// taskinfo syscall
-const SYSCALL_TASK_INFO: usize = 410;
+pub const SYSCALL_TASK_INFO: usize = 410;
+//pub const SYSCALL_THREAD_CREATE: usize = 460;
+//pub const SYSCALL_WAITTID: usize = 462;
+//pub const SYSCALL_MUTEX_CREATE: usize = 463;
+//pub const SYSCALL_MUTEX_LOCK: usize = 464;
+//pub const SYSCALL_MUTEX_UNLOCK: usize = 466;
+//pub const SYSCALL_SEMAPHORE_CREATE: usize = 467;
+//pub const SYSCALL_SEMAPHORE_UP: usize = 468;
+//pub const SYSCALL_ENABLE_DEADLOCK_DETECT: usize = 469;
+//pub const SYSCALL_SEMAPHORE_DOWN: usize = 470;
+//pub const SYSCALL_CONDVAR_CREATE: usize = 471;
+//pub const SYSCALL_CONDVAR_SIGNAL: usize = 472;
+//pub const SYSCALL_CONDVAR_WAIT: usize = 473;
 
 mod fs;
 mod process;
@@ -62,7 +89,7 @@ use crate::fs::Stat;
 /// handle syscall exception with `syscall_id` and other arguments
 pub fn syscall(syscall_id: usize, args: [usize; 4]) -> isize {
     match syscall_id {
-        SYSCALL_OPEN => sys_open(args[1] as *const u8, args[2] as u32),
+        SYSCALL_OPENAT => sys_open(args[1] as *const u8, args[2] as u32),
         SYSCALL_CLOSE => sys_close(args[0]),
         SYSCALL_LINKAT => sys_linkat(args[1] as *const u8, args[3] as *const u8),
         SYSCALL_UNLINKAT => sys_unlinkat(args[1] as *const u8),
@@ -85,3 +112,5 @@ pub fn syscall(syscall_id: usize, args: [usize; 4]) -> isize {
         _ => panic!("Unsupported syscall_id: {}", syscall_id),
     }
 }
+
+

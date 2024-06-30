@@ -1,3 +1,9 @@
+//!ASCII Rust SPA4 LF
+// Docutitle: Timer
+// Codifiers: @dosconio: 20240515
+// Attribute: RISC-V-64
+// Copyright: rCore-Tutorial-Code-2024S
+
 //! RISC-V timer-related functionality
 
 use crate::config::CLOCK_FREQ;
@@ -5,6 +11,7 @@ use crate::sbi::set_timer;
 use riscv::register::time;
 /// The number of ticks per second
 const TICKS_PER_SEC: usize = 100;
+
 /// The number of milliseconds per second
 const MSEC_PER_SEC: usize = 1000;
 /// The number of microseconds per second
@@ -16,11 +23,13 @@ pub fn get_time() -> usize {
 }
 
 /// get current time in milliseconds
+//{}#[allow(dead_code)]
 pub fn get_time_ms() -> usize {
     time::read() * MSEC_PER_SEC / CLOCK_FREQ
 }
 
 /// get current time in microseconds
+//{}#[allow(dead_code)]
 pub fn get_time_us() -> usize {
     time::read() * MICRO_PER_SEC / CLOCK_FREQ
 }

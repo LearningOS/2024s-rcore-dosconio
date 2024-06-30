@@ -1,3 +1,9 @@
+//!ASCII Rust SPA4 LF
+// Docutitle: ? of Mcca-rCore
+// Codifiers: @dosconio: 20240518
+// Attribute: RISC-V-64
+// Copyright: rCore-Tutorial-Code-2024S
+
 //! The global allocator
 use crate::config::KERNEL_HEAP_SIZE;
 use buddy_system_allocator::LockedHeap;
